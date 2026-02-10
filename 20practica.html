@@ -5,11 +5,20 @@
   <body>
     <h1>Pr&aacute;ctica veinte de Xinle Wang</h1>
     <h1>Rellena tu CV</h1>
-    <form>
+    <form action="mailto:direccion@correo.com"  method="post" enctype="text/plain">
       <br>Nombre</br>
       <input type="text" name="nombre"></form></input>
       <br>Apellidos</br>
-      <input type="text" surnames="apellidos">
+      <input type="text" name="apellidos">
+      <br>Contrase&ntilde;a</br>
+    <input type="password" name="contrase&ntilde;a">
+    <br>DNI</br>
+    <input type="text" name="DNI">
+    <br>Sexo</br>
+    <input type="radio" name="Sexo" value="1">Hombre 
+    <br> 
+    <input type="radio" name="Sexo" value="2">Mujer
+    
     </form>
   </body>
 </html>
