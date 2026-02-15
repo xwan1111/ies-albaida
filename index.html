@@ -4,75 +4,25 @@
 <meta charset="UTF-8">
 <title>AI Image Chat</title>
 <style>
-body {
-    margin: 0;
-    font-family: system-ui, Arial, sans-serif;
-    background: #343541;
-    color: white;
-    display: flex;
-    height: 100vh;
-}
-#sidebar {
-    width: 250px;
-    background: #202123;
-    padding: 10px;
-    overflow-y: auto;
-}
-#sidebar button {
-    width: 100%;
-    padding: 10px;
-    background: #19c37d;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-bottom: 10px;
-}
-#chatList .chatItem {
-    padding: 10px;
-    background: #2a2b32;
-    margin-bottom: 6px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-#chatList .chatItem:hover { background: #3a3b42; }
-#main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-#messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-}
-.msg {
-    max-width: 70%;
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 12px;
-}
-.user { background: #444654; margin-left: auto; }
-.ai { background: #3a3b42; }
-.images {
-    display: grid;
-    grid-template-columns: repeat(auto-fill,minmax(150px,1fr));
-    gap: 10px;
-    margin-top: 10px;
-}
-.images img { width: 100%; border-radius: 8px; }
-#inputBar {
-    background: #40414f;
-    padding: 10px;
-    display: flex;
-    gap: 10px;
-}
-input, select { padding: 10px; border-radius: 6px; border: none; }
-button { background: #19c37d; border: none; color: white; padding: 10px 15px; border-radius: 6px; cursor: pointer; }
-canvas { background: black; margin-top: 10px; }
+body {margin:0;font-family:system-ui, Arial;display:flex;height:100vh;background:#343541;color:white;}
+#sidebar {width:250px;background:#202123;padding:10px;overflow-y:auto;}
+#sidebar button {width:100%;padding:10px;background:#19c37d;color:white;border:none;border-radius:6px;margin-bottom:10px;cursor:pointer;}
+#chatList .chatItem {padding:10px;background:#2a2b32;margin-bottom:6px;border-radius:6px;cursor:pointer;}
+#chatList .chatItem:hover {background:#3a3b42;}
+#main {flex:1;display:flex;flex-direction:column;}
+#messages {flex:1;overflow-y:auto;padding:20px;}
+.msg {max-width:70%;padding:12px;border-radius:10px;margin-bottom:12px;word-break:break-word;}
+.user {background:#444654;margin-left:auto;}
+.ai {background:#3a3b42;}
+.images {display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:10px;}
+.images img {width:100%;border-radius:8px;}
+#inputBar {background:#40414f;padding:10px;display:flex;gap:10px;}
+input, select {padding:10px;border-radius:6px;border:none;}
+button {background:#19c37d;border:none;color:white;padding:10px 15px;border-radius:6px;cursor:pointer;}
+canvas {background:black;margin-top:10px;}
+.gameMenu button {margin:5px;}
 </style>
 </head>
-
 <body>
 
 <div id="sidebar">
@@ -102,56 +52,55 @@ canvas { background: black; margin-top: 10px; }
 </div>
 
 <script>
-// --- Variables del chat ---
-let chats = [{messages:[]}];
-let current = 0;
+// --- Variables ---
+let chats=[{messages:[]}];
+let current=0;
 
-// --- Renderizar lista de chats ---
+// --- Renderizar chats ---
 function renderChats(){
-    chatList.innerHTML = "";
+    chatList.innerHTML="";
     chats.forEach((c,i)=>{
-        const div = document.createElement("div");
-        div.className = "chatItem";
-        div.textContent = "Chat "+(i+1);
-        div.onclick = ()=>{ current = i; render(); };
+        const div=document.createElement("div");
+        div.className="chatItem";
+        div.textContent="Chat "+(i+1);
+        div.onclick=()=>{current=i;render();};
         chatList.appendChild(div);
     });
 }
 
-// --- Crear nuevo chat ---
+// --- Nuevo chat ---
 function newChat(){
     chats.push({messages:[]});
-    current = chats.length-1;
+    current=chats.length-1;
     renderChats();
     render();
 }
 
 // --- Renderizar mensajes ---
 function render(){
-    messages.innerHTML = "";
+    messages.innerHTML="";
     chats[current].messages.forEach(m=>{
-        const div = document.createElement("div");
-        div.className = "msg "+m.role;
-        div.innerHTML = m.text;
+        const div=document.createElement("div");
+        div.className="msg "+m.role;
+        div.innerHTML=m.text;
         messages.appendChild(div);
-
         if(m.images){
-            const grid = document.createElement("div");
-            grid.className = "images";
+            const grid=document.createElement("div");
+            grid.className="images";
             m.images.forEach(src=>{
-                const img = document.createElement("img");
-                img.src = src;
+                const img=document.createElement("img");
+                img.src=src;
                 grid.appendChild(img);
             });
             messages.appendChild(grid);
         }
     });
-    messages.scrollTop = messages.scrollHeight;
+    messages.scrollTop=messages.scrollHeight;
 }
 
 // --- Generar imágenes falsas ---
 function fakeImages(prompt,count,style){
-    const arr = [];
+    const arr=[];
     for(let i=0;i<count;i++){
         arr.push(`https://picsum.photos/seed/${encodeURIComponent(prompt+style+i)}/512`);
     }
@@ -159,35 +108,106 @@ function fakeImages(prompt,count,style){
 }
 
 // --- Enviar mensaje ---
-async function send(){
-    const text = prompt.value.trim();
+function send(){
+    const text=prompt.value.trim();
     if(!text) return;
     chats[current].messages.push({role:"user",text});
     render();
-    prompt.value = "";
+    prompt.value="";
 
-    if(text==="/play"){ openGames(); return; }
+    if(text==="/play"){ showGameMenu(); return; }
 
-    const styleVal = style.value;
-    const countVal = parseInt(count.value);
+    const styleVal=style.value;
+    const countVal=parseInt(count.value);
 
-    // generar imágenes
     chats[current].messages.push({role:"ai",text:"Generando imágenes..."});
     render();
 
     setTimeout(()=>{
         chats[current].messages.pop();
-        const imgs = fakeImages(text,countVal,styleVal);
+        const imgs=fakeImages(text,countVal,styleVal);
         chats[current].messages.push({role:"ai",text:"Imágenes generadas:",images:imgs});
         render();
     },1000);
 }
 
-// --- Enter para enviar ---
+// --- Enter envía ---
 prompt.addEventListener("keydown",e=>{
-    if(e.
+    if(e.key==="Enter") send();
+});
 
-<script src="api.js"></script>
-<script src="app.js"></script>
+// --- Menú de juegos ---
+function showGameMenu(){
+    chats[current].messages.push({role:"ai",text:"Elige un juego:",images:[],html:true});
+    render();
+
+    const div=document.createElement("div");
+    div.className="gameMenu";
+    const games=[
+        {name:"Adivina número",func:guess},
+        {name:"Reflejos",func:reflex},
+        {name:"Snake",func:snake}
+    ];
+    games.forEach(g=>{
+        const btn=document.createElement("button");
+        btn.textContent=g.name;
+        btn.onclick=g.func;
+        div.appendChild(btn);
+    });
+    messages.appendChild(div);
+    messages.scrollTop=messages.scrollHeight;
+}
+
+// --- Juegos ---
+function guess(){
+    const n=Math.floor(Math.random()*10)+1;
+    let g=prompt("Número 1-10");
+    alert(g==n?"¡Ganaste!":"Era "+n);
+}
+
+function reflex(){
+    const t=Date.now();
+    alert("Pulsa OK rápido");
+    alert("Tiempo: "+(Date.now()-t)+" ms");
+}
+
+function snake(){
+    const existing=document.getElementById("gameCanvas");
+    if(existing) existing.remove();
+    const c=document.createElement("canvas");
+    c.id="gameCanvas";
+    c.width=300;c.height=300;
+    messages.appendChild(c);
+    const ctx=c.getContext("2d");
+    let x=150,y=150,dx=10,dy=0,foodX=50,foodY=50;
+
+    document.onkeydown=e=>{
+        if(e.key==="ArrowUp"){dx=0;dy=-10;}
+        if(e.key==="ArrowDown"){dx=0;dy=10;}
+        if(e.key==="ArrowLeft"){dx=-10;dy=0;}
+        if(e.key==="ArrowRight"){dx=10;dy=0;}
+    };
+
+    setInterval(()=>{
+        ctx.fillStyle="black";
+        ctx.fillRect(0,0,300,300);
+        x+=dx;y+=dy;
+
+        if(x==foodX && y==foodY){
+            foodX=Math.floor(Math.random()*29)*10;
+            foodY=Math.floor(Math.random()*29)*10;
+        }
+
+        ctx.fillStyle="red";
+        ctx.fillRect(foodX,foodY,10,10);
+        ctx.fillStyle="lime";
+        ctx.fillRect(x,y,10,10);
+    },120);
+}
+
+// --- Inicializar ---
+renderChats();
+render();
+</script>
 </body>
 </html>
