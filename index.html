@@ -23,17 +23,24 @@ body{
 }
 #newChat{
     padding:15px;
-    border-bottom:1px solid #1e293b;
     cursor:pointer;
     background:#111827;
+    border-bottom:1px solid #1e293b;
 }
-#chatList{ flex:1; overflow:auto; }
 .chatItem{
     padding:12px;
     border-bottom:1px solid #1e293b;
     cursor:pointer;
+    display:flex;
+    justify-content:space-between;
 }
 .chatItem:hover{ background:#1e293b; }
+
+.deleteChat{
+    color:#ef4444;
+    cursor:pointer;
+    font-size:14px;
+}
 
 #main{
     flex:1;
@@ -45,26 +52,30 @@ body{
     overflow:auto;
     padding:20px;
 }
-.message{ margin-bottom:18px; }
+.message{ margin-bottom:20px; }
 .user{ text-align:right; }
 
-.bot img{
+.imgBox{
+    position:relative;
+    display:inline-block;
+}
+.imgBox img{
     max-width:100%;
     border-radius:10px;
-    margin-top:6px;
-    display:block;
+    margin-top:5px;
 }
 .downloadBtn{
-    margin-top:6px;
-    padding:6px 10px;
-    font-size:13px;
+    position:absolute;
+    top:8px;
+    right:8px;
+    background:rgba(0,0,0,0.6);
     border:none;
-    border-radius:6px;
-    background:#16a34a;
     color:white;
+    padding:6px 8px;
+    border-radius:6px;
     cursor:pointer;
 }
-.downloadBtn:hover{ background:#15803d; }
+.downloadBtn:hover{ background:black; }
 
 footer{
     display:flex;
@@ -119,7 +130,11 @@ function renderChats(){
     const list=document.getElementById("chatList");
     list.innerHTML="";
     chats.forEach((c,i)=>{
-        list.innerHTML+=`<div class="chatItem" onclick="openChat(${i})">${c.name}</div>`;
+        list.innerHTML+=`
+        <div class="chatItem">
+            <span onclick="openChat(${i})">${c.name}</span>
+            <span class="deleteChat" onclick="deleteChat(${i})">🗑</span>
+        </div>`;
     });
 }
 
@@ -130,6 +145,15 @@ function newChat(){
     save();
     renderChats();
     renderMessages();
+}
+
+function deleteChat(i){
+    if(!confirm("¿Borrar este chat?")) return;
+    chats.splice(i,1);
+    currentChat=null;
+    save();
+    renderChats();
+    document.getElementById("messages").innerHTML="";
 }
 
 function openChat(i){
@@ -147,10 +171,11 @@ function renderMessages(){
             box.innerHTML+=`<div class="message user"><b>Tú:</b> ${m.text}</div>`;
         }else{
             box.innerHTML+=`
-            <div class="message bot">
-                <b>IA:</b><br>
-                <img src="${m.url}">
-                <button class="downloadBtn" onclick="downloadImage('${m.url}', ${i})">⬇ Descargar</button>
+            <div class="message">
+                <div class="imgBox">
+                    <img src="${m.url}">
+                    <button class="downloadBtn" onclick="downloadImage('${m.url}')">⬇</button>
+                </div>
             </div>`;
         }
     });
@@ -158,13 +183,17 @@ function renderMessages(){
     box.scrollTop=box.scrollHeight;
 }
 
-function downloadImage(url,index){
+async function downloadImage(url){
+    const r=await fetch(url);
+    const blob=await r.blob();
+    const blobUrl=URL.createObjectURL(blob);
+
     const a=document.createElement("a");
-    a.href=url;
-    a.download="imagen_"+(index+1)+".png";
-    document.body.appendChild(a);
+    a.href=blobUrl;
+    a.download="imagen.png";
     a.click();
-    document.body.removeChild(a);
+
+    URL.revokeObjectURL(blobUrl);
 }
 
 function send(){
@@ -177,13 +206,11 @@ function send(){
     chats[currentChat].messages.push({type:"user",text});
     input.value="";
 
-    // GENERADOR REAL DE IMÁGENES IA (funciona sin API)
-    const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(text + ", photorealistic, ultra detailed, cinematic lighting");
+    // IA REAL generando imagen desde texto
+    const url="https://image.pollinations.ai/prompt/"
+        + encodeURIComponent(text + ", photorealistic, ultra detailed, 8k, cinematic lighting");
 
-    chats[currentChat].messages.push({
-        type:"bot",
-        url:imageUrl
-    });
+    chats[currentChat].messages.push({type:"bot",url});
 
     save();
     renderMessages();
@@ -195,3 +222,4 @@ renderChats();
 
 </body>
 </html>
+
