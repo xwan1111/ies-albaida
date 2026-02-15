@@ -30,17 +30,12 @@ body{
 .chatItem{
     padding:12px;
     border-bottom:1px solid #1e293b;
-    cursor:pointer;
     display:flex;
     justify-content:space-between;
 }
+.chatItem span{ cursor:pointer; }
 .chatItem:hover{ background:#1e293b; }
-
-.deleteChat{
-    color:#ef4444;
-    cursor:pointer;
-    font-size:14px;
-}
+.deleteChat{ color:#ef4444; }
 
 #main{
     flex:1;
@@ -62,7 +57,6 @@ body{
 .imgBox img{
     max-width:100%;
     border-radius:10px;
-    margin-top:5px;
 }
 .downloadBtn{
     position:absolute;
@@ -166,7 +160,7 @@ function renderMessages(){
     box.innerHTML="";
     if(currentChat===null) return;
 
-    chats[currentChat].messages.forEach((m,i)=>{
+    chats[currentChat].messages.forEach(m=>{
         if(m.type==="user"){
             box.innerHTML+=`<div class="message user"><b>Tú:</b> ${m.text}</div>`;
         }else{
@@ -184,16 +178,23 @@ function renderMessages(){
 }
 
 async function downloadImage(url){
-    const r=await fetch(url);
-    const blob=await r.blob();
-    const blobUrl=URL.createObjectURL(blob);
+    try{
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
 
-    const a=document.createElement("a");
-    a.href=blobUrl;
-    a.download="imagen.png";
-    a.click();
+        const a=document.createElement("a");
+        a.href=blobUrl;
+        a.download="imagen.png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
 
-    URL.revokeObjectURL(blobUrl);
+        URL.revokeObjectURL(blobUrl);
+    }catch(e){
+        window.open(url,"_blank");
+        alert("No se pudo descargar automáticamente. Se abrió la imagen para guardarla manualmente.");
+    }
 }
 
 function send(){
@@ -206,9 +207,9 @@ function send(){
     chats[currentChat].messages.push({type:"user",text});
     input.value="";
 
-    // IA REAL generando imagen desde texto
+    // Generador IA real desde texto
     const url="https://image.pollinations.ai/prompt/"
-        + encodeURIComponent(text + ", photorealistic, ultra detailed, 8k, cinematic lighting");
+        + encodeURIComponent(text + ", photorealistic, ultra detailed, cinematic lighting, 8k");
 
     chats[currentChat].messages.push({type:"bot",url});
 
