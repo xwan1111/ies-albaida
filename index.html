@@ -2,12 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>AI Image Chat</title>
+<title>AI Image Chat Local</title>
 <style>
 body {margin:0;font-family:system-ui,Arial;display:flex;height:100vh;background:#343541;color:white;}
 #sidebar {width:250px;background:#202123;padding:10px;overflow-y:auto;}
 #sidebar button {width:100%;padding:10px;background:#19c37d;color:white;border:none;border-radius:6px;margin-bottom:10px;cursor:pointer;}
-#chatList .chatItem {padding:10px;background:#2a2b32;margin-bottom:6px;border-radius:6px;cursor:pointer;}
+#chatList .chatItem {padding:10px;background:#2a2b32;margin-bottom:6px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
 #chatList .chatItem:hover {background:#3a3b42;}
 #main {flex:1;display:flex;flex-direction:column;}
 #messages {flex:1;overflow-y:auto;padding:20px;}
@@ -19,8 +19,6 @@ body {margin:0;font-family:system-ui,Arial;display:flex;height:100vh;background:
 #inputBar {background:#40414f;padding:10px;display:flex;gap:10px;}
 input, select {padding:10px;border-radius:6px;border:none;flex:1;}
 button {background:#19c37d;border:none;color:white;padding:10px 15px;border-radius:6px;cursor:pointer;}
-canvas {background:black;margin-top:10px;}
-.gameMenu button {margin:5px;}
 </style>
 </head>
 <body>
@@ -33,7 +31,7 @@ canvas {background:black;margin-top:10px;}
 <div id="main">
 <div id="messages"></div>
 <div id="inputBar">
-<input id="prompt" placeholder="Escribe prompt o /play">
+<input id="prompt" placeholder="Escribe algo para generar imágenes">
 <select id="style">
 <option>realista</option>
 <option>anime</option>
@@ -51,23 +49,41 @@ canvas {background:black;margin-top:10px;}
 </div>
 
 <script>
-// ---------------- VARIABLES ----------------
+// -------- VARIABLES --------
 let chats = [{messages:[]}];
 let current = 0;
 
-// ---------------- RENDER CHATS ----------------
+// -------- RENDER CHATS --------
 function renderChats(){
     chatList.innerHTML = "";
     chats.forEach((c,i)=>{
         const div = document.createElement("div");
         div.className = "chatItem";
-        div.textContent = "Chat " + (i+1);
-        div.onclick = ()=>{ current = i; render(); };
+
+        const span = document.createElement("span");
+        span.textContent = "Chat " + (i+1);
+        span.style.cursor="pointer";
+        span.onclick = ()=>{ current = i; render(); };
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "🗑";
+        delBtn.style.background="red";
+        delBtn.style.padding="2px 6px";
+        delBtn.style.borderRadius="4px";
+        delBtn.onclick = ()=>{
+            chats.splice(i,1);
+            if(current>=chats.length) current = chats.length-1;
+            renderChats();
+            render();
+        };
+
+        div.appendChild(span);
+        div.appendChild(delBtn);
         chatList.appendChild(div);
     });
 }
 
-// ---------------- NUEVO CHAT ----------------
+// -------- NUEVO CHAT --------
 function newChat(){
     chats.push({messages:[]});
     current = chats.length-1;
@@ -75,14 +91,16 @@ function newChat(){
     render();
 }
 
-// ---------------- RENDER MENSAJES ----------------
+// -------- RENDER MENSAJES --------
 function render(){
     messages.innerHTML = "";
+    if(current<0) return;
     chats[current].messages.forEach(m=>{
         const div = document.createElement("div");
         div.className = "msg " + m.role;
         div.innerHTML = m.text;
         messages.appendChild(div);
+
         if(m.images){
             const grid = document.createElement("div");
             grid.className = "images";
@@ -93,31 +111,27 @@ function render(){
             });
             messages.appendChild(grid);
         }
-        if(m.htmlContent){
-            messages.appendChild(m.htmlContent);
-        }
     });
     messages.scrollTop = messages.scrollHeight;
 }
 
-// ---------------- IMÁGENES FALSAS ----------------
-function fakeImages(prompt,count,style){
+// -------- GENERAR IMÁGENES SIMULADAS --------
+function generateImages(promptText,count,style){
     const arr = [];
     for(let i=0;i<count;i++){
-        arr.push(`https://picsum.photos/seed/${encodeURIComponent(prompt+style+i)}/512`);
+        // Picsum simula imágenes diferentes
+        arr.push(`https://picsum.photos/seed/${encodeURIComponent(promptText+style+i)}/512`);
     }
     return arr;
 }
 
-// ---------------- ENVIAR MENSAJE ----------------
+// -------- ENVIAR MENSAJE --------
 function send(){
     const text = prompt.value.trim();
     if(!text) return;
     chats[current].messages.push({role:"user",text});
     render();
-    prompt.value = "";
-
-    if(text==="/play"){ showGameMenu(); return; }
+    prompt.value="";
 
     const styleVal = style.value;
     const countVal = parseInt(count.value);
@@ -127,91 +141,23 @@ function send(){
 
     setTimeout(()=>{
         chats[current].messages.pop();
-        const imgs = fakeImages(text,countVal,styleVal);
+        const imgs = generateImages(text,countVal,styleVal);
         chats[current].messages.push({role:"ai",text:"Imágenes generadas:",images:imgs});
         render();
     }, 1000);
 }
 
-// ---------------- ENTER Y BOTÓN ----------------
+// -------- ENTER Y BOTÓN --------
 prompt.addEventListener("keydown",e=>{
     if(e.key==="Enter") send();
 });
 document.getElementById("sendBtn").addEventListener("click", send);
 
-// ---------------- MENÚ DE JUEGOS ----------------
-function showGameMenu(){
-    const divMenu = document.createElement("div");
-    divMenu.className = "gameMenu";
-    const info = document.createElement("div");
-    info.textContent = "Elige un juego:";
-    divMenu.appendChild(info);
-
-    const games = [
-        {name:"Adivina número",func:guess},
-        {name:"Reflejos",func:reflex},
-        {name:"Snake",func:snake}
-    ];
-    games.forEach(g=>{
-        const btn = document.createElement("button");
-        btn.textContent = g.name;
-        btn.onclick = g.func;
-        divMenu.appendChild(btn);
-    });
-
-    chats[current].messages.push({role:"ai",text:"",htmlContent:divMenu});
-    render();
-}
-
-// ---------------- JUEGOS ----------------
-function guess(){
-    const n = Math.floor(Math.random()*10)+1;
-    const g = prompt("Adivina el número (1-10):");
-    alert(g==n ? "¡Ganaste!" : "Era "+n);
-}
-
-function reflex(){
-    const start = Date.now();
-    alert("Pulsa OK rápido");
-    alert("Tiempo: "+(Date.now()-start)+" ms");
-}
-
-function snake(){
-    const existing = document.getElementById("gameCanvas");
-    if(existing) existing.remove();
-    const canvas = document.createElement("canvas");
-    canvas.id="gameCanvas"; canvas.width=300; canvas.height=300;
-    messages.appendChild(canvas);
-    const ctx = canvas.getContext("2d");
-
-    let x=150,y=150,dx=10,dy=0,foodX=50,foodY=50;
-    document.onkeydown = e=>{
-        if(e.key==="ArrowUp"){dx=0;dy=-10;}
-        if(e.key==="ArrowDown"){dx=0;dy=10;}
-        if(e.key==="ArrowLeft"){dx=-10;dy=0;}
-        if(e.key==="ArrowRight"){dx=10;dy=0;}
-    };
-
-    setInterval(()=>{
-        ctx.fillStyle="black";
-        ctx.fillRect(0,0,300,300);
-        x+=dx; y+=dy;
-
-        if(x===foodX && y===foodY){
-            foodX=Math.floor(Math.random()*29)*10;
-            foodY=Math.floor(Math.random()*29)*10;
-        }
-
-        ctx.fillStyle="red"; ctx.fillRect(foodX,foodY,10,10);
-        ctx.fillStyle="lime"; ctx.fillRect(x,y,10,10);
-    },120);
-}
-
-// ---------------- INICIALIZAR ----------------
+// -------- INICIALIZAR --------
 renderChats();
 render();
 </script>
-
 </body>
 </html>
+
 
