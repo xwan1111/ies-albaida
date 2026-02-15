@@ -57,6 +57,7 @@ body{
 .imgBox img{
     max-width:100%;
     border-radius:10px;
+    display:block;
 }
 .downloadBtn{
     position:absolute;
@@ -70,6 +71,11 @@ body{
     cursor:pointer;
 }
 .downloadBtn:hover{ background:black; }
+
+.loading{
+    font-size:14px;
+    opacity:0.7;
+}
 
 footer{
     display:flex;
@@ -164,13 +170,17 @@ function renderMessages(){
         if(m.type==="user"){
             box.innerHTML+=`<div class="message user"><b>Tú:</b> ${m.text}</div>`;
         }else{
-            box.innerHTML+=`
-            <div class="message">
-                <div class="imgBox">
-                    <img src="${m.url}">
-                    <button class="downloadBtn" onclick="downloadImage('${m.url}')">⬇</button>
-                </div>
-            </div>`;
+            if(m.loading){
+                box.innerHTML+=`<div class="message loading">Generando imagen...</div>`;
+            }else{
+                box.innerHTML+=`
+                <div class="message">
+                    <div class="imgBox">
+                        <img src="${m.url}" referrerpolicy="no-referrer">
+                        <button class="downloadBtn" onclick="downloadImage('${m.url}')">⬇</button>
+                    </div>
+                </div>`;
+            }
         }
     });
 
@@ -186,14 +196,11 @@ async function downloadImage(url){
         const a=document.createElement("a");
         a.href=blobUrl;
         a.download="imagen.png";
-        document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
 
         URL.revokeObjectURL(blobUrl);
     }catch(e){
         window.open(url,"_blank");
-        alert("No se pudo descargar automáticamente. Se abrió la imagen para guardarla manualmente.");
     }
 }
 
@@ -207,15 +214,30 @@ function send(){
     chats[currentChat].messages.push({type:"user",text});
     input.value="";
 
-    // Generador IA real desde texto
-    const url="https://image.pollinations.ai/prompt/"
-        + encodeURIComponent(text + ", photorealistic, ultra detailed, cinematic lighting, 8k");
-
-    chats[currentChat].messages.push({type:"bot",url});
-
-    save();
+    // mensaje temporal de carga
+    chats[currentChat].messages.push({type:"bot",loading:true});
     renderMessages();
+
+    // generar URL de imagen IA
+    const url="https://image.pollinations.ai/prompt/"
+        + encodeURIComponent(text + ", photorealistic, ultra detailed, cinematic lighting");
+
+    // esperar un poco para que la imagen exista
+    setTimeout(()=>{
+        chats[currentChat].messages.pop();
+        chats[currentChat].messages.push({type:"bot",url});
+        save();
+        renderMessages();
+    },1200);
 }
+
+// ENTER ENVÍA MENSAJE
+document.getElementById("prompt").addEventListener("keydown",function(e){
+    if(e.key==="Enter"){
+        e.preventDefault();
+        send();
+    }
+});
 
 document.getElementById("newChat").onclick=newChat;
 renderChats();
@@ -223,4 +245,3 @@ renderChats();
 
 </body>
 </html>
-
