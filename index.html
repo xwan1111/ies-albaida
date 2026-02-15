@@ -2,206 +2,41 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ImageChat</title>
-
-<style>
-body{
-    margin:0;
-    font-family:Arial, sans-serif;
-    background:#0f172a;
-    color:white;
-    display:flex;
-    height:100vh;
-}
-#sidebar{
-    width:260px;
-    background:#020617;
-    border-right:1px solid #1e293b;
-    display:flex;
-    flex-direction:column;
-}
-#newChat{
-    padding:15px;
-    cursor:pointer;
-    background:#111827;
-    border-bottom:1px solid #1e293b;
-}
-.chatItem{
-    padding:12px;
-    border-bottom:1px solid #1e293b;
-    display:flex;
-    justify-content:space-between;
-}
-.chatItem span{ cursor:pointer; }
-.chatItem:hover{ background:#1e293b; }
-.deleteChat{ color:#ef4444; }
-
-#main{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-}
-#messages{
-    flex:1;
-    overflow:auto;
-    padding:20px;
-}
-.message{ margin-bottom:20px; }
-.user{ text-align:right; }
-
-img{
-    max-width:100%;
-    border-radius:10px;
-    display:block;
-    margin-top:6px;
-}
-
-.loading{
-    opacity:0.7;
-    font-size:14px;
-}
-
-footer{
-    display:flex;
-    padding:15px;
-    border-top:1px solid #1e293b;
-    background:#020617;
-}
-input{
-    flex:1;
-    padding:12px;
-    border-radius:8px;
-    border:none;
-    outline:none;
-}
-button{
-    margin-left:10px;
-    padding:12px 18px;
-    border:none;
-    border-radius:8px;
-    background:#2563eb;
-    color:white;
-    cursor:pointer;
-}
-button:hover{ background:#1d4ed8; }
-</style>
+<title>AI Image Chat</title>
+<link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 
 <div id="sidebar">
-    <div id="newChat">➕ Nuevo chat</div>
-    <div id="chatList"></div>
+<button onclick="newChat()">+ Nuevo chat</button>
+<div id="chatList"></div>
 </div>
 
 <div id="main">
-    <div id="messages"></div>
-    <footer>
-        <input id="prompt" placeholder="Describe la imagen que quieres generar...">
-        <button onclick="send()">Enviar</button>
-    </footer>
+<div id="messages"></div>
+
+<div id="inputBar">
+<input id="prompt" placeholder="Escribe prompt o /play">
+<select id="style">
+<option>realista</option>
+<option>anime</option>
+<option>arte</option>
+<option>3d</option>
+</select>
+
+<select id="count">
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+</select>
+
+<button onclick="send()">Enviar</button>
+</div>
 </div>
 
-<script>
-let chats = JSON.parse(localStorage.getItem("imageChats")||"[]");
-let currentChat = null;
-
-function save(){
-    localStorage.setItem("imageChats", JSON.stringify(chats));
-}
-
-function renderChats(){
-    const list=document.getElementById("chatList");
-    list.innerHTML="";
-    chats.forEach((c,i)=>{
-        list.innerHTML+=`
-        <div class="chatItem">
-            <span onclick="openChat(${i})">${c.name}</span>
-            <span class="deleteChat" onclick="deleteChat(${i})">🗑</span>
-        </div>`;
-    });
-}
-
-function newChat(){
-    const chat={name:"Chat "+(chats.length+1),messages:[]};
-    chats.unshift(chat);
-    currentChat=0;
-    save();
-    renderChats();
-    renderMessages();
-}
-
-function deleteChat(i){
-    if(!confirm("¿Borrar este chat?")) return;
-    chats.splice(i,1);
-    currentChat=null;
-    save();
-    renderChats();
-    document.getElementById("messages").innerHTML="";
-}
-
-function openChat(i){
-    currentChat=i;
-    renderMessages();
-}
-
-function renderMessages(){
-    const box=document.getElementById("messages");
-    box.innerHTML="";
-    if(currentChat===null) return;
-
-    chats[currentChat].messages.forEach(m=>{
-        if(m.type==="user"){
-            box.innerHTML+=`<div class="message user"><b>Tú:</b> ${m.text}</div>`;
-        }else if(m.loading){
-            box.innerHTML+=`<div class="message loading">Generando imagen...</div>`;
-        }else{
-            box.innerHTML+=`<div class="message"><img src="${m.url}" crossorigin="anonymous"></div>`;
-        }
-    });
-
-    box.scrollTop=box.scrollHeight;
-}
-
-function send(){
-    if(currentChat===null) return;
-
-    const input=document.getElementById("prompt");
-    const text=input.value.trim();
-    if(!text) return;
-
-    chats[currentChat].messages.push({type:"user",text});
-    input.value="";
-
-    // mensaje de carga
-    chats[currentChat].messages.push({type:"bot",loading:true});
-    renderMessages();
-
-    // URL generador IA (estable)
-    const url="https://image.pollinations.ai/prompt/" +
-        encodeURIComponent(text + ", photorealistic, ultra detailed, cinematic lighting");
-
-    // dar tiempo a que la imagen se genere
-    setTimeout(()=>{
-        chats[currentChat].messages.pop();
-        chats[currentChat].messages.push({type:"bot",url});
-        save();
-        renderMessages();
-    },1500);
-}
-
-// ENTER ENVÍA
-document.getElementById("prompt").addEventListener("keydown",function(e){
-    if(e.key==="Enter"){
-        e.preventDefault();
-        send();
-    }
-});
-
-document.getElementById("newChat").onclick=newChat;
-renderChats();
-</script>
-
+<script src="api.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
