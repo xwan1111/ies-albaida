@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>AI Image Chat</title>
+
+<style>
+body{
+    margin:0;
+    font-family:system-ui;
+    background:#343541;
+    color:white;
+    display:flex;
+    height:100vh;
+}
+#sidebar{
+    width:260px;
+    background:#202123;
+    padding:10px;
+    overflow:auto;
+}
+#newChat{
+    width:100%;
+    padding:10px;
+    background:#19c37d;
+    border:none;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+    margin-bottom:10px;
+}
+.chatItem{
+    padding:10px;
+    background:#2a2b32;
+    margin-bottom:6px;
+    border-radius:6px;
+    cursor:pointer;
+}
+.chatItem:hover{background:#3a3b42}
+
+#main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+}
+
+#messages{
+    flex:1;
+    overflow:auto;
+    padding:20px;
+}
+
+.msg{
+    max-width:70%;
+    padding:12px;
+    border-radius:10px;
+    margin-bottom:15px;
+}
+.user{background:#444654;margin-left:auto}
+.ai{background:#3a3b42}
+
+.images{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:10px;
+    margin-top:10px;
+}
+.images img{
+    width:100%;
+    border-radius:8px;
+}
+
+#inputBar{
+    padding:15px;
+    background:#40414f;
+    display:flex;
+    gap:10px;
+}
+input,select{
+    padding:10px;
+    border-radius:6px;
+    border:none;
+}
+#prompt{flex:1}
+button{
+    background:#19c37d;
+    border:none;
+    padding:10px 15px;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+}
+#games{
+    padding:20px;
+}
+.gameBtn{
+    padding:10px;
+    margin:5px;
+    background:#19c37d;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div id="sidebar">
+<button id="newChat">+ Nuevo chat</button>
+<div id="chatList"></div>
+</div>
+
+<div id="main">
+<div id="messages"></div>
+
+<div id="inputBar">
+<input id="prompt" placeholder="Escribe tu prompt o /play">
+<select id="style">
+<option value="real">Realista</option>
+<option value="anime">Anime</option>
+<option value="art">Arte</option>
+<option value="3d">3D</option>
+</select>
+
+<select id="count">
+<option value="1">1 img</option>
+<option value="2">2 img</option>
+<option value="3">3 img</option>
+<option value="4">4 img</option>
+</select>
+
+<button onclick="send()">Enviar</button>
+</div>
+</div>
+
+<script>
+let chats=[{messages:[]}];
+let current=0;
+
+function renderChats(){
+    chatList.innerHTML="";
+    chats.forEach((c,i)=>{
+        const d=document.createElement("div");
+        d.className="chatItem";
+        d.textContent="Chat "+(i+1);
+        d.onclick=()=>{current=i;render()};
+        chatList.appendChild(d);
+    });
+}
+
+newChat.onclick=()=>{
+    chats.push({messages:[]});
+    current=chats.length-1;
+    renderChats();
+    render();
+}
+
+function render(){
+    messages.innerHTML="";
+    chats[current].messages.forEach(m=>{
+        const div=document.createElement("div");
+        div.className="msg "+m.role;
+        div.innerHTML=m.text;
+        messages.appendChild(div);
+
+        if(m.images){
+            const grid=document.createElement("div");
+            grid.className="images";
+            m.images.forEach(src=>{
+                const img=document.createElement("img");
+                img.src=src;
+                grid.appendChild(img);
+            });
+            messages.appendChild(grid);
+        }
+    });
+    messages.scrollTop=999999;
+}
+
+function fakeImages(prompt,count,style){
+    const arr=[];
+    for(let i=0;i<count;i++){
+        arr.push(`https://picsum.photos/seed/${encodeURIComponent(prompt+style+i)}/512`);
+    }
+    return arr;
+}
+
+function send(){
+    const text=prompt.value.trim();
+    if(!text) return;
+
+    chats[current].messages.push({role:"user",text});
+    render();
+
+    prompt.value="";
+
+    if(text.startsWith("/play")){
+        showGames();
+        return;
+    }
+
+    const styleVal=style.value;
+    const countVal=parseInt(count.value);
+
+    setTimeout(()=>{
+        const imgs=fakeImages(text,countVal,styleVal);
+        chats[current].messages.push({
+            role:"ai",
+            text:"Imágenes generadas:",
+            images:imgs
+        });
+        render();
+    },500);
+}
+
+prompt.addEventListener("keydown",e=>{
+    if(e.key==="Enter") send();
+});
+
+function showGames(){
+    const gamesHTML=`
+<div id="games">
+<h3>🎮 Juegos disponibles</h3>
+
+<button class="gameBtn" onclick="alert('Adivina número: piensa del 1 al 10')">Adivina número</button>
+<button class="gameBtn" onclick="alert('Piedra papel tijera próximamente')">Piedra papel tijera</button>
+<button class="gameBtn" onclick="alert('Tres en raya pronto')">Tres en raya</button>
+<button class="gameBtn" onclick="alert('Memory game pronto')">Memory</button>
+<button class="gameBtn" onclick="alert('Snake mini pronto')">Snake</button>
+<button class="gameBtn" onclick="alert('Trivia pronto')">Trivia</button>
+<button class="gameBtn" onclick="alert('Sudoku simple pronto')">Sudoku</button>
+<button class="gameBtn" onclick="alert('Rompecabezas pronto')">Puzzle</button>
+<button class="gameBtn" onclick="alert('Click rápido pronto')">Reflejos</button>
+<button class="gameBtn" onclick="alert('Laberinto pronto')">Laberinto</button>
+
+</div>
+`;
+    chats[current].messages.push({role:"ai",text:gamesHTML});
+    render();
+}
+
+renderChats();
+render();
+</script>
+
+</body>
+</html>
