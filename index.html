@@ -2,47 +2,16 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Chat Generador de Imágenes</title>
+<title>Chat Imagen IA Local</title>
 <style>
 body {
     margin:0;
-    font-family:Arial, sans-serif;
+    font-family:Arial,sans-serif;
     display:flex;
+    flex-direction:column;
     height:100vh;
     background:#343541;
     color:white;
-}
-#sidebar {
-    width:250px;
-    background:#202123;
-    padding:10px;
-    overflow-y:auto;
-}
-#sidebar button {
-    width:100%;
-    padding:10px;
-    background:#19c37d;
-    color:white;
-    border:none;
-    border-radius:6px;
-    margin-bottom:10px;
-    cursor:pointer;
-}
-#chatList .chatItem {
-    padding:10px;
-    background:#2a2b32;
-    margin-bottom:6px;
-    border-radius:6px;
-    cursor:pointer;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-#chatList .chatItem:hover {background:#3a3b42;}
-#main {
-    flex:1;
-    display:flex;
-    flex-direction:column;
 }
 #messages {
     flex:1;
@@ -64,173 +33,89 @@ body {
     gap:10px;
     margin-top:10px;
 }
-.images img {
-    width:100%;
-    border-radius:8px;
-}
+.images img {width:100%;border-radius:8px;}
 #inputBar {
     background:#40414f;
     padding:10px;
     display:flex;
     gap:10px;
 }
-input, select {
-    padding:10px;
-    border-radius:6px;
-    border:none;
-    flex:1;
-}
-button {
-    background:#19c37d;
-    border:none;
-    color:white;
-    padding:10px 15px;
-    border-radius:6px;
-    cursor:pointer;
-}
+input {flex:1;padding:10px;border-radius:6px;border:none;}
+button {padding:10px 15px;border-radius:6px;border:none;background:#19c37d;color:white;cursor:pointer;}
 </style>
 </head>
 <body>
 
-<div id="sidebar">
-    <button onclick="newChat()">+ Nuevo chat</button>
-    <div id="chatList"></div>
-</div>
-
-<div id="main">
-    <div id="messages"></div>
-    <div id="inputBar">
-        <input id="prompt" placeholder="Escribe tu mensaje o prompt">
-        <select id="style">
-            <option>realista</option>
-            <option>anime</option>
-            <option>arte</option>
-            <option>3d</option>
-        </select>
-        <select id="count">
-            <option>1</option>
-            <option>2</option>
-            <option>3</option>
-            <option>4</option>
-        </select>
-        <button id="sendBtn">Enviar</button>
-    </div>
+<div id="messages"></div>
+<div id="inputBar">
+<input id="prompt" placeholder="Escribe tu mensaje">
+<button id="sendBtn">Enviar</button>
 </div>
 
 <script>
-// ---------------- VARIABLES ----------------
-let chats = [{messages:[]}];
-let current = 0;
+// Array para almacenar mensajes
+let messagesData = [];
 
-// ---------------- RENDER LISTA DE CHATS ----------------
-function renderChats() {
-    chatList.innerHTML = "";
-    chats.forEach((chat, i) => {
-        const div = document.createElement("div");
-        div.className = "chatItem";
-
-        const span = document.createElement("span");
-        span.textContent = "Chat " + (i+1);
-        span.style.cursor = "pointer";
-        span.onclick = () => { current = i; render(); };
-
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "🗑";
-        delBtn.style.background = "red";
-        delBtn.style.padding = "2px 6px";
-        delBtn.style.borderRadius = "4px";
-        delBtn.onclick = (e) => {
-            e.stopPropagation();
-            chats.splice(i, 1);
-            if(current >= chats.length) current = chats.length - 1;
-            renderChats();
-            render();
-        };
-
-        div.appendChild(span);
-        div.appendChild(delBtn);
-        chatList.appendChild(div);
-    });
-}
-
-// ---------------- NUEVO CHAT ----------------
-function newChat() {
-    chats.push({messages:[]});
-    current = chats.length - 1;
-    renderChats();
-    render();
-}
-
-// ---------------- RENDER MENSAJES ----------------
+// Función para renderizar mensajes
 function render() {
+    const messages = document.getElementById("messages");
     messages.innerHTML = "";
-    if(current < 0) return;
-    chats[current].messages.forEach(m => {
+    messagesData.forEach(m => {
         const div = document.createElement("div");
         div.className = "msg " + m.role;
         div.textContent = m.text;
         messages.appendChild(div);
 
-        // Si hay imágenes, se muestran debajo del mensaje
-        if(m.images){
+        if(m.image) {
             const grid = document.createElement("div");
             grid.className = "images";
-            m.images.forEach(src => {
-                const img = document.createElement("img");
-                img.src = src;
-                grid.appendChild(img);
-            });
+            const img = document.createElement("img");
+            img.src = m.image;
+            grid.appendChild(img);
             messages.appendChild(grid);
         }
     });
     messages.scrollTop = messages.scrollHeight;
 }
 
-// ---------------- GENERAR IMÁGENES SIMULADAS ----------------
-function generateImages(promptText, count, style) {
-    const images = [];
-    for(let i=0; i<count; i++) {
-        // Simulación usando picsum.photos
-        images.push(`https://picsum.photos/seed/${encodeURIComponent(promptText+style+i)}/512`);
-    }
-    return images;
+// Función para generar imagen simulada
+function generateImage(promptText) {
+    // Picsum genera imagen aleatoria basada en texto
+    return `https://picsum.photos/seed/${encodeURIComponent(promptText)}/512`;
 }
 
-// ---------------- ENVIAR MENSAJE ----------------
+// Función enviar mensaje
 function send() {
-    const text = prompt.value.trim();
+    const input = document.getElementById("prompt");
+    const text = input.value.trim();
     if(!text) return;
 
     // Mensaje del usuario
-    chats[current].messages.push({role:"user", text});
+    messagesData.push({role:"user", text});
     render();
-    prompt.value="";
+    input.value = "";
 
-    // Mensaje de IA (generación de imágenes)
-    chats[current].messages.push({role:"ai", text:"Generando imágenes..."});
+    // Mensaje de la IA con imagen
+    const img = generateImage(text);
+    messagesData.push({role:"ai", text:"Imagen generada:", image: img});
     render();
-
-    const styleVal = style.value;
-    const countVal = parseInt(count.value);
-
-    setTimeout(() => {
-        chats[current].messages.pop();
-        const imgs = generateImages(text, countVal, styleVal);
-        chats[current].messages.push({role:"ai", text:"Imágenes generadas:", images: imgs});
-        render();
-    }, 800);
 }
 
-// ---------------- ENTER Y BOTÓN ----------------
-prompt.addEventListener("keydown", e => { if(e.key === "Enter") send(); });
+// Enviar con botón
 document.getElementById("sendBtn").addEventListener("click", send);
 
-// ---------------- INICIALIZAR ----------------
-renderChats();
+// Enviar con Enter
+document.getElementById("prompt").addEventListener("keydown", e => {
+    if(e.key === "Enter") send();
+});
+
+// Render inicial
 render();
 </script>
 
 </body>
 </html>
+
+
 
 
