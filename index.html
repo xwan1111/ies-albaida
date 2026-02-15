@@ -3,7 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <title>AI Image Chat</title>
-<link rel="stylesheet" href="styles.css">
+<style>
+body {
+    margin: 0;
+    font-family: system-ui, Arial, sans-serif;
+    background: #343541;
+    color: white;
+    display: flex;
+    height: 100vh;
+}
+#sidebar {
+    width: 250px;
+    background: #202123;
+    padding: 10px;
+    overflow-y: auto;
+}
+#sidebar button {
+    width: 100%;
+    padding: 10px;
+    background: #19c37d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+#chatList .chatItem {
+    padding: 10px;
+    background: #2a2b32;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+#chatList .chatItem:hover { background: #3a3b42; }
+#main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+#messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+.msg {
+    max-width: 70%;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+}
+.user { background: #444654; margin-left: auto; }
+.ai { background: #3a3b42; }
+.images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(150px,1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+.images img { width: 100%; border-radius: 8px; }
+#inputBar {
+    background: #40414f;
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+}
+input, select { padding: 10px; border-radius: 6px; border: none; }
+button { background: #19c37d; border: none; color: white; padding: 10px 15px; border-radius: 6px; cursor: pointer; }
+canvas { background: black; margin-top: 10px; }
+</style>
 </head>
 
 <body>
@@ -24,17 +91,101 @@
 <option>arte</option>
 <option>3d</option>
 </select>
-
 <select id="count">
 <option>1</option>
 <option>2</option>
 <option>3</option>
 <option>4</option>
 </select>
-
 <button onclick="send()">Enviar</button>
 </div>
 </div>
+
+<script>
+// --- Variables del chat ---
+let chats = [{messages:[]}];
+let current = 0;
+
+// --- Renderizar lista de chats ---
+function renderChats(){
+    chatList.innerHTML = "";
+    chats.forEach((c,i)=>{
+        const div = document.createElement("div");
+        div.className = "chatItem";
+        div.textContent = "Chat "+(i+1);
+        div.onclick = ()=>{ current = i; render(); };
+        chatList.appendChild(div);
+    });
+}
+
+// --- Crear nuevo chat ---
+function newChat(){
+    chats.push({messages:[]});
+    current = chats.length-1;
+    renderChats();
+    render();
+}
+
+// --- Renderizar mensajes ---
+function render(){
+    messages.innerHTML = "";
+    chats[current].messages.forEach(m=>{
+        const div = document.createElement("div");
+        div.className = "msg "+m.role;
+        div.innerHTML = m.text;
+        messages.appendChild(div);
+
+        if(m.images){
+            const grid = document.createElement("div");
+            grid.className = "images";
+            m.images.forEach(src=>{
+                const img = document.createElement("img");
+                img.src = src;
+                grid.appendChild(img);
+            });
+            messages.appendChild(grid);
+        }
+    });
+    messages.scrollTop = messages.scrollHeight;
+}
+
+// --- Generar imágenes falsas ---
+function fakeImages(prompt,count,style){
+    const arr = [];
+    for(let i=0;i<count;i++){
+        arr.push(`https://picsum.photos/seed/${encodeURIComponent(prompt+style+i)}/512`);
+    }
+    return arr;
+}
+
+// --- Enviar mensaje ---
+async function send(){
+    const text = prompt.value.trim();
+    if(!text) return;
+    chats[current].messages.push({role:"user",text});
+    render();
+    prompt.value = "";
+
+    if(text==="/play"){ openGames(); return; }
+
+    const styleVal = style.value;
+    const countVal = parseInt(count.value);
+
+    // generar imágenes
+    chats[current].messages.push({role:"ai",text:"Generando imágenes..."});
+    render();
+
+    setTimeout(()=>{
+        chats[current].messages.pop();
+        const imgs = fakeImages(text,countVal,styleVal);
+        chats[current].messages.push({role:"ai",text:"Imágenes generadas:",images:imgs});
+        render();
+    },1000);
+}
+
+// --- Enter para enviar ---
+prompt.addEventListener("keydown",e=>{
+    if(e.
 
 <script src="api.js"></script>
 <script src="app.js"></script>
