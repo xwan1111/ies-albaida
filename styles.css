@@ -1,0 +1,13 @@
+body{margin:0;font-family:system-ui;background:#343541;color:white;display:flex;height:100vh}
+#sidebar{width:250px;background:#202123;padding:10px;overflow:auto}
+#main{flex:1;display:flex;flex-direction:column}
+#messages{flex:1;overflow:auto;padding:20px}
+.msg{max-width:70%;padding:12px;border-radius:10px;margin-bottom:12px}
+.user{background:#444654;margin-left:auto}
+.ai{background:#3a3b42}
+.images{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:10px}
+.images img{width:100%;border-radius:8px}
+#inputBar{background:#40414f;padding:10px;display:flex;gap:10px}
+input,select{padding:10px;border-radius:6px;border:none}
+button{background:#19c37d;border:none;color:white;padding:10px 15px;border-radius:6px;cursor:pointer}
+canvas{background:black;margin-top:10px}
