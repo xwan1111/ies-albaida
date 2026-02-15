@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImageChat AI</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#0f172a;
+    color:white;
+    display:flex;
+    height:100vh;
+}
+#sidebar{
+    width:260px;
+    background:#020617;
+    border-right:1px solid #1e293b;
+    display:flex;
+    flex-direction:column;
+}
+#newChat{
+    padding:15px;
+    border-bottom:1px solid #1e293b;
+    cursor:pointer;
+    background:#111827;
+}
+#chatList{ flex:1; overflow:auto; }
+.chatItem{
+    padding:12px;
+    border-bottom:1px solid #1e293b;
+    cursor:pointer;
+}
+.chatItem:hover{ background:#1e293b; }
+
+#main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+}
+#messages{
+    flex:1;
+    overflow:auto;
+    padding:20px;
+}
+.message{ margin-bottom:18px; }
+.user{ text-align:right; }
+
+.bot img{
+    max-width:100%;
+    border-radius:10px;
+    margin-top:6px;
+    display:block;
+}
+.downloadBtn{
+    margin-top:6px;
+    padding:6px 10px;
+    font-size:13px;
+    border:none;
+    border-radius:6px;
+    background:#16a34a;
+    color:white;
+    cursor:pointer;
+}
+.downloadBtn:hover{ background:#15803d; }
+
+footer{
+    display:flex;
+    padding:15px;
+    border-top:1px solid #1e293b;
+    background:#020617;
+}
+input{
+    flex:1;
+    padding:12px;
+    border-radius:8px;
+    border:none;
+    outline:none;
+}
+button.send{
+    margin-left:10px;
+    padding:12px 18px;
+    border:none;
+    border-radius:8px;
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
+}
+button.send:hover{ background:#1d4ed8; }
+</style>
+</head>
+
+<body>
+
+<div id="sidebar">
+    <div id="newChat">➕ Nuevo chat</div>
+    <div id="chatList"></div>
+</div>
+
+<div id="main">
+    <div id="messages"></div>
+    <footer>
+        <input id="prompt" placeholder="Describe la imagen que quieres generar...">
+        <button class="send" onclick="send()">Enviar</button>
+    </footer>
+</div>
+
+<script>
+let chats = JSON.parse(localStorage.getItem("imageChats")||"[]");
+let currentChat = null;
+
+function save(){
+    localStorage.setItem("imageChats", JSON.stringify(chats));
+}
+
+function renderChats(){
+    const list=document.getElementById("chatList");
+    list.innerHTML="";
+    chats.forEach((c,i)=>{
+        list.innerHTML+=`<div class="chatItem" onclick="openChat(${i})">${c.name}</div>`;
+    });
+}
+
+function newChat(){
+    const chat={name:"Chat "+(chats.length+1),messages:[]};
+    chats.unshift(chat);
+    currentChat=0;
+    save();
+    renderChats();
+    renderMessages();
+}
+
+function openChat(i){
+    currentChat=i;
+    renderMessages();
+}
+
+function renderMessages(){
+    const box=document.getElementById("messages");
+    box.innerHTML="";
+    if(currentChat===null) return;
+
+    chats[currentChat].messages.forEach((m,i)=>{
+        if(m.type==="user"){
+            box.innerHTML+=`<div class="message user"><b>Tú:</b> ${m.text}</div>`;
+        }else{
+            box.innerHTML+=`
+            <div class="message bot">
+                <b>IA:</b><br>
+                <img src="${m.url}">
+                <button class="downloadBtn" onclick="downloadImage('${m.url}', ${i})">⬇ Descargar</button>
+            </div>`;
+        }
+    });
+
+    box.scrollTop=box.scrollHeight;
+}
+
+function downloadImage(url,index){
+    const a=document.createElement("a");
+    a.href=url;
+    a.download="imagen_"+(index+1)+".png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function send(){
+    if(currentChat===null) return;
+
+    const input=document.getElementById("prompt");
+    const text=input.value.trim();
+    if(!text) return;
+
+    chats[currentChat].messages.push({type:"user",text});
+    input.value="";
+
+    // GENERADOR REAL DE IMÁGENES IA (funciona sin API)
+    const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(text + ", photorealistic, ultra detailed, cinematic lighting");
+
+    chats[currentChat].messages.push({
+        type:"bot",
+        url:imageUrl
+    });
+
+    save();
+    renderMessages();
+}
+
+document.getElementById("newChat").onclick=newChat;
+renderChats();
+</script>
+
+</body>
+</html>
